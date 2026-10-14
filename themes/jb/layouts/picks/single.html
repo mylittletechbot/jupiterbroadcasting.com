@@ -1,37 +1,118 @@
 {{ define "main" }}
+    {{ $site := .Site }}
+    {{ $showNames := slice }}
+    {{ $licenses := slice }}
+    {{ range .Site.Data.picks }}
+        {{ range .shows }}
+            {{ $showNames = $showNames | append .show }}
+        {{ end }}
+        {{ with .license }}
+            {{ $licenses = $licenses | append . }}
+        {{ end }}
+    {{ end }}
+    {{ $showNames = sort (uniq $showNames) }}
+    {{ $licenses = sort (uniq $licenses) }}
+    {{ $picksJS := resources.Get "js/picks.js" | resources.Minify | resources.Fingerprint }}
+    <script defer src="{{ $picksJS.Permalink }}" integrity="{{ $picksJS.Data.Integrity }}"></script>
+
     <section class="spnosor-list px-4 mb-5">
         <div class="container">
             <div class="column is-full content">
                 <h1 class="title">Pick Pen</h1>
                 <p>Picks from JB Shows, please feel free to make a PR to submit past picks.</p>
-                <style>
 
-                </style>
-                <div class="pick-grid">
+                <form id="pick-discovery-controls" class="pick-controls" aria-label="Find picks" hidden>
+                    <div class="pick-controls__grid">
+                        <div class="field">
+                            <label class="label" for="pick-search">Search picks</label>
+                            <div class="control">
+                                <input id="pick-search" class="input" type="search" placeholder="Title or description" autocomplete="off">
+                            </div>
+                        </div>
 
-                    {{ range .Site.Data.picks }}
-                    <div class="pick card">
-                        <div class="card-content">
+                        <div class="field">
+                            <label class="label" for="pick-show">Show</label>
+                            <div class="control select is-fullwidth">
+                                <select id="pick-show">
+                                    <option value="">All shows</option>
+                                    {{ range $showNames }}
+                                    <option value="{{ . }}">{{ . }}</option>
+                                    {{ end }}
+                                </select>
+                            </div>
+                        </div>
 
-                            <h4><a href="{{ .url }}" target="_blank">{{ .title }}</a></h4> {{ if .license}} <span class="tag is-black pick__license">{{.license}}</span> {{ end }}
-                            <p>
-                                {{ .description }}
-                            </p>
+                        <div class="field">
+                            <label class="label" for="pick-license">License</label>
+                            <div class="control select is-fullwidth">
+                                <select id="pick-license">
+                                    <option value="">All licenses</option>
+                                    {{ range $licenses }}
+                                    <option value="{{ . }}">{{ . }}</option>
+                                    {{ end }}
+                                    <option value="__unknown__">Unknown</option>
+                                </select>
+                            </div>
+                        </div>
 
-                            <div class="field is-grouped is-grouped-multiline">
-
-                                {{ range .shows }}
-                                <a  href="/show/{{.slug }}/{{.episode}}" class="control">
-                                    <div class="tags has-addons">
-                                      <span class="tag is-dark">{{ .show }}</span>
-                                      <span class="tag is-black">{{ .episode }}</span>
-                                    </div>
-                                </a>
-
-                                {{ end }}
+                        <div class="field">
+                            <label class="label" for="pick-sort">Sort picks</label>
+                            <div class="control select is-fullwidth">
+                                <select id="pick-sort">
+                                    <option value="title-asc">Title A–Z</option>
+                                    <option value="title-desc">Title Z–A</option>
+                                    <option value="date-desc">Most recently featured</option>
+                                </select>
                             </div>
                         </div>
                     </div>
+
+                    <div class="pick-controls__summary">
+                        <p id="pick-results-count" class="mb-0" aria-live="polite">{{ len .Site.Data.picks }} picks</p>
+                        <button id="pick-reset" class="button is-light" type="button">Reset filters</button>
+                    </div>
+                </form>
+
+                <p id="pick-empty-state" class="notification is-info is-light" hidden>No picks match those selections. Try clearing a filter or using a different search.</p>
+
+                <div id="pick-grid" class="pick-grid">
+                    {{ range .Site.Data.picks }}
+                        {{ $latestTimestamp := 0 }}
+                        {{ $latestDate := "" }}
+                        {{ $pickShows := slice }}
+                        {{ range .shows }}
+                            {{ $pickShows = $pickShows | append .show }}
+                            {{ with $site.GetPage (printf "/show/%s/%04d" .slug (int .episode)) }}
+                                {{ if gt .Date.Unix $latestTimestamp }}
+                                    {{ $latestTimestamp = .Date.Unix }}
+                                    {{ $latestDate = .Date.Format "2006-01-02T15:04:05Z07:00" }}
+                                {{ end }}
+                            {{ end }}
+                        {{ end }}
+                        <div class="pick card"
+                             data-title="{{ .title }}"
+                             data-search="{{ printf "%s %s" .title (default "" .description) }}"
+                             data-shows="{{ $pickShows | jsonify }}"
+                             data-license="{{ default "" .license }}"
+                             data-featured-timestamp="{{ $latestTimestamp }}"
+                             data-featured-date="{{ $latestDate }}">
+                            <div class="card-content">
+                                <h4><a href="{{ .url }}" target="_blank" rel="noopener noreferrer">{{ .title }}</a></h4>
+                                {{ if .license }}<span class="tag is-black pick__license">{{ .license }}</span>{{ end }}
+                                <p>{{ .description }}</p>
+
+                                <div class="field is-grouped is-grouped-multiline">
+                                    {{ range .shows }}
+                                    <a href="/show/{{ .slug }}/{{ .episode }}" class="control">
+                                        <div class="tags has-addons">
+                                            <span class="tag is-dark">{{ .show }}</span>
+                                            <span class="tag is-black">{{ .episode }}</span>
+                                        </div>
+                                    </a>
+                                    {{ end }}
+                                </div>
+                            </div>
+                        </div>
                     {{ end }}
                 </div>
             </div>

@@ -1,3 +1,24 @@
+.pick-controls
+    margin: 2rem 0
+    padding: 1.25rem
+    border: 1px solid rgba(255, 255, 255, 0.15)
+    border-radius: 6px
+
+    .label
+        color: inherit
+
+.pick-controls__grid
+    display: grid
+    grid-template-columns: minmax(14rem, 2fr) repeat(3, minmax(10rem, 1fr))
+    gap: 1rem
+
+.pick-controls__summary
+    display: flex
+    align-items: center
+    justify-content: space-between
+    gap: 1rem
+    margin-top: .5rem
+
 .pick-grid
     display: grid
     grid-template-columns: repeat(3, 1fr)
@@ -5,11 +26,24 @@
     gap: 20px
     grid-auto-flow: dense
 
+.pick[hidden]
+    display: none
+
 @media screen and (max-width: 1024px)
+    .pick-controls__grid
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+
     .pick-grid
         grid-template-columns: repeat(2, 1fr)
 
 @media screen and (max-width: 600px)
+    .pick-controls__grid
+        grid-template-columns: minmax(0, 1fr)
+
+    .pick-controls__summary
+        align-items: stretch
+        flex-direction: column
+
     .pick-grid
         grid-template-columns: repeat(1, 1fr)
 
