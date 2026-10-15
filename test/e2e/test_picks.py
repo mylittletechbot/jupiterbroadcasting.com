@@ -86,4 +86,4 @@ def test_controls_fit_a_mobile_viewport(page: Page, screenshot_dir: Path):
     expect(controls).to_be_visible()
     assert controls.bounding_box()["width"] <= 390
 
-    page.screenshot(path=f"{screenshot_dir}/pick-pen-mobile.png", full_page=True)
+    controls.screenshot(path=f"{screenshot_dir}/pick-pen-mobile.png")
